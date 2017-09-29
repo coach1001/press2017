@@ -1,0 +1,11 @@
+Press State Machine:
+
+State 0 - Piston Idle (Disable Direction Channels, Stop Motor)
+State 1 - Piston Manual Up (Enable Up Direction Channels, Start Motor - Manual Speed)
+State 2 - Piston Manual Down (Enable Down Direction Channels, Start Motor - Manual Speed)
+State 3 - Piston Manual Reversing (Invert Current Direction Channels, Start Motor -  Reverse Speed)
+State 4 - Press Zeroing (Read Force Channels, Read Displacement Channels, Set Zero Values)
+State 5 - Piston Test Approaching (Enable Test Direction Channels, Start Motor -  Approach Speed)
+State 6 - Piston Test Running (Start Motor - PID Speed)
+State 7 - Piston Test Reversing (Invert Test Direction Channels, Start Motor - Reverse)
+
