@@ -10,12 +10,13 @@ let mainWindow
 
 let buffer = Buffer.alloc(13)
 let inputs = [0, 0, 0, 0, 0, 0, 0, 0]
-
+let isConnected = false
 buffer[0] = 0x63
 
 port.on('open', function () {
   console.log('Port Opened...')
   setTimeout(function () {
+    isConnected = true
     port.write(buffer)
   }, 1000)
 })
@@ -61,13 +62,8 @@ ipcMain.on('exit-from-ui', function () {
 
 ipcMain.on('request-data', function (event, args) {
   event.sender.send('response-data', {
-    data: inputs
-  })
-})
-
-ipcMain.on('check-connection', function (event, args) {
-  event.sender.send('response-connection', {
-    connected: port.isOpen
+    data: inputs,
+    isConnected: isConnected
   })
 })
 

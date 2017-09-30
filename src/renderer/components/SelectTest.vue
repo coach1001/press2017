@@ -26,7 +26,7 @@
             v-bind:headers="headers"
             :items="itemsTable"
             hide-actions
-            class="elevation-1"
+            class="elevation-1 fixed_headers"
           >
           <template slot="items" scope="props">
             <td>{{ props.item.name }}</td>
@@ -75,13 +75,13 @@
 
     <div class="test-select-buttons">
       <div>
-        <v-btn fab large class="primary">
+        <v-btn fab large class="primary" @click.stop="rise">
           <v-icon large>file_upload</v-icon>
         </v-btn>
         <span class="toolbar-text">Raise Piston</span>
       </div>
       <div>
-        <v-btn fab large class="primary">
+        <v-btn fab large class="primary" @click.stop="drop">
           <v-icon large>file_download</v-icon>
         </v-btn>
         <span class="toolbar-text">Drop Piston</span>
@@ -101,6 +101,12 @@
       </div>
     </div>
 
+    <v-dialog v-model="dialog">
+      <v-card style="text-align: center;">
+        <v-progress-circular  indeterminate :size="150" :width="2" class="primary--text">{{dialogMessage}}</v-progress-circular>
+      </v-card>
+    </v-dialog>
+
   </div>
 </template>
 
@@ -109,6 +115,8 @@ export default {
   name: 'SelectTest',
   data () {
     return {
+      dialogMessage: '',
+      dialog: false,
       valid: false,
       name: '',
       nameRules: [
@@ -315,6 +323,14 @@ export default {
     },
     scrollTableDown () {
       this.$refs.scrollTable.scrollTop += 25
+    },
+    rise () {
+      this.dialogMessage = 'Piston Rising'
+      this.dialog = true
+    },
+    drop () {
+      this.dialogMessage = 'Piston Dropping'
+      this.dialog = true
     }
   }
 }
@@ -355,9 +371,10 @@ export default {
 }
 .test-select-table-scroll {
   flex: 1;
-  margin-top: 20px;
-  margin-bottom: 20px;
+  margin-top: 15px;
+  margin-bottom: 15px;
   display: flex;
   flex-direction: column;
 }
+
 </style>

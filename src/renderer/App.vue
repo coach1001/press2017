@@ -60,30 +60,19 @@ export default {
         ipcRenderer.send('request-data')
       }, 1000 / 60)
     },
-    checkConnection () {
-      return setInterval(() => {
-        ipcRenderer.send('check-connection')
-      }, 500)
-    },
     minimize () {
       ipcRenderer.send('minimize-from-ui')
     }
   },
   created () {
-    this.checkConnection()
     this.updateInterval()
     ipcRenderer.on('response-data', (event, arg) => {
-      this.data = []
       this.data = arg.data.slice(0)
-    })
-
-    ipcRenderer.on('response-connection', (event, args) => {
-      this.isConnected = args.connected
+      this.isConnected = arg.isConnected
     })
   },
   beforeDestroy () {
     clearInterval(this.updateInterval)
-    clearInterval(this.checkConnection)
     ipcRenderer.send('disconnect-serial')
   }
 }
@@ -130,4 +119,5 @@ main, html, body {
 .non-draggable{
   -webkit-app-region: no-drag;
 }
+
 </style>
