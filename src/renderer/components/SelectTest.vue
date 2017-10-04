@@ -24,16 +24,14 @@
       <div class="test-select-table" ref="scrollTable">
           <v-data-table
             v-bind:headers="headers"
-            :items="itemsTable"
+            :items="tests"
             hide-actions
             class="elevation-1 fixed_headers"
           >
           <template slot="items" scope="props">
             <td>{{ props.item.name }}</td>
-            <td class="text-xs-right">{{ props.item.calories }}</td>
-            <td class="text-xs-right">{{ props.item.fat }}</td>
-            <td class="text-xs-right">{{ props.item.carbs }}</td>
-            <td class="text-xs-right">{{ props.item.protein }}</td>
+            <td class="text-xs-right">{{ props.item.rate_type }}</td>
+            <td class="text-xs-right">{{ props.item.rate_value }}</td>
           </template>
         </v-data-table>
       </div>
@@ -111,6 +109,8 @@
 </template>
 
 <script>
+import { mapState } from 'vuex'
+
 export default {
   name: 'SelectTest',
   data () {
@@ -138,177 +138,19 @@ export default {
       checkbox: false,
       headers: [
         {
-          text: 'Dessert (100g serving)',
+          text: 'Test',
           align: 'left',
-          sortable: false,
+          sortable: true,
           value: 'name'
         },
-        { text: 'Calories', value: 'calories' },
-        { text: 'Fat (g)', value: 'fat' },
-        { text: 'Carbs (g)', value: 'carbs' },
-        { text: 'Protein (g)', value: 'protein' }
-        // { text: 'Sodium (mg)', value: 'sodium' },
-        // { text: 'Calcium (%)', value: 'calcium' },
-        // { text: 'Iron (%)', value: 'iron' }
-      ],
-      itemsTable: [
-        {
-          value: false,
-          name: 'Frozen Yogurt',
-          calories: 159,
-          fat: 6.0,
-          carbs: 24,
-          protein: 4.0,
-          sodium: 87,
-          calcium: '14%',
-          iron: '1%'
-        },
-        {
-          value: false,
-          name: 'Ice cream sandwich',
-          calories: 237,
-          fat: 9.0,
-          carbs: 37,
-          protein: 4.3,
-          sodium: 129,
-          calcium: '8%',
-          iron: '1%'
-        },
-        {
-          value: false,
-          name: 'Eclair',
-          calories: 262,
-          fat: 16.0,
-          carbs: 23,
-          protein: 6.0,
-          sodium: 337,
-          calcium: '6%',
-          iron: '7%'
-        },
-        {
-          value: false,
-          name: 'Cupcake',
-          calories: 305,
-          fat: 3.7,
-          carbs: 67,
-          protein: 4.3,
-          sodium: 413,
-          calcium: '3%',
-          iron: '8%'
-        },
-        {
-          value: false,
-          name: 'Gingerbread',
-          calories: 356,
-          fat: 16.0,
-          carbs: 49,
-          protein: 3.9,
-          sodium: 327,
-          calcium: '7%',
-          iron: '16%'
-        },
-        {
-          value: false,
-          name: 'Jelly bean',
-          calories: 375,
-          fat: 0.0,
-          carbs: 94,
-          protein: 0.0,
-          sodium: 50,
-          calcium: '0%',
-          iron: '0%'
-        },
-        {
-          value: false,
-          name: 'Lollipop',
-          calories: 392,
-          fat: 0.2,
-          carbs: 98,
-          protein: 0,
-          sodium: 38,
-          calcium: '0%',
-          iron: '2%'
-        },
-        {
-          value: false,
-          name: 'Honeycomb',
-          calories: 408,
-          fat: 3.2,
-          carbs: 87,
-          protein: 6.5,
-          sodium: 562,
-          calcium: '0%',
-          iron: '45%'
-        },
-        {
-          value: false,
-          name: 'Donut',
-          calories: 452,
-          fat: 25.0,
-          carbs: 51,
-          protein: 4.9,
-          sodium: 326,
-          calcium: '2%',
-          iron: '22%'
-        },
-        {
-          value: false,
-          name: 'KitKat',
-          calories: 518,
-          fat: 26.0,
-          carbs: 65,
-          protein: 7,
-          sodium: 54,
-          calcium: '12%',
-          iron: '6%'
-        },
-        {
-          value: false,
-          name: 'Donut',
-          calories: 452,
-          fat: 25.0,
-          carbs: 51,
-          protein: 4.9,
-          sodium: 326,
-          calcium: '2%',
-          iron: '22%'
-        },
-        {
-          value: false,
-          name: 'KitKat',
-          calories: 518,
-          fat: 26.0,
-          carbs: 65,
-          protein: 7,
-          sodium: 54,
-          calcium: '12%',
-          iron: '6%'
-        },
-        {
-          value: false,
-          name: 'Donut',
-          calories: 452,
-          fat: 25.0,
-          carbs: 51,
-          protein: 4.9,
-          sodium: 326,
-          calcium: '2%',
-          iron: '22%'
-        },
-        {
-          value: false,
-          name: 'KitKat',
-          calories: 518,
-          fat: 26.0,
-          carbs: 65,
-          protein: 7,
-          sodium: 54,
-          calcium: '12%',
-          iron: '6%'
-        }
+        { text: 'Rate Type', value: 'rate_type' },
+        { text: 'Rate Value', value: 'rate_value' }
       ]
     }
   },
+  computed: mapState({
+    tests: state => state.DbData.data.tests
+  }),
   methods: {
     submit () {
       if (this.$refs.form.validate()) {
@@ -332,6 +174,9 @@ export default {
       this.dialogMessage = 'Piston Dropping'
       this.dialog = true
     }
+  },
+  created () {
+    console.log(this.tests)
   }
 }
 </script>
@@ -376,5 +221,4 @@ export default {
   display: flex;
   flex-direction: column;
 }
-
 </style>

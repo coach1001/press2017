@@ -2,11 +2,27 @@
 
 import { app, BrowserWindow, ipcMain } from 'electron'
 import SerialPort from 'serialport'
+import sqlite3 from 'sqlite3'
+import path from 'path'
+
 const ByteLength = SerialPort.parsers.ByteLength
 
-let port = new SerialPort('COM7', { autoOpen: false })
+let port = new SerialPort('COM13', { autoOpen: false })
 let parser = port.pipe(new ByteLength({ length: 26 }))
 let mainWindow
+let db = new sqlite3.Database(path.join(__static, '/press_new.db'))
+let dbData = {
+  tests: [],
+  testLimits: [],
+  settings: [],
+  runs: [],
+  runSamples: [],
+  motorChannels: [],
+  limitChannels: [],
+  forceChannels: [],
+  displacementChannels: [],
+  directionChannels: []
+}
 
 let buffer = Buffer.alloc(13)
 let inputs = [0, 0, 0, 0, 0, 0, 0, 0]
@@ -51,24 +67,28 @@ if (process.env.NODE_ENV !== 'development') {
   global.__static = require('path').join(__dirname, '/static').replace(/\\/g, '\\\\')
 }
 
-ipcMain.on('disconnect-serial', function () {
+ipcMain.on('disconnect-serial', () => {
   port.close()
   console.log('Port Closed...')
 })
 
-ipcMain.on('exit-from-ui', function () {
+ipcMain.on('exit-from-ui', () => {
   app.quit()
 })
 
-ipcMain.on('request-data', function (event, args) {
+ipcMain.on('request-data', (event, args) => {
   event.sender.send('response-data', {
     data: inputs,
     isConnected: isConnected
   })
 })
 
-ipcMain.on('minimize-from-ui', function () {
+ipcMain.on('minimize-from-ui', () => {
   mainWindow.minimize()
+})
+
+ipcMain.on('request-db-data', (event, args) => {
+  event.sender.send('response-db-data', dbData)
 })
 
 const winURL = process.env.NODE_ENV === 'development'
@@ -89,15 +109,77 @@ const mainWindowOptions = process.env.NODE_ENV === 'development'
     frame: false
   }
 
+function initializeSettings () {
+  db.serialize(function () {
+    db.each('SELECT * FROM tests', function (err, row) {
+      if (err) {
+        console.log(err)
+      }
+      dbData.tests.push(row)
+    })
+    db.each('SELECT * FROM test_limits', function (err, row) {
+      if (err) {
+        console.log(err)
+      }
+      dbData.testLimits.push(row)
+    })
+    db.each('SELECT * FROM settings', function (err, row) {
+      if (err) {
+        console.log(err)
+      }
+      dbData.settings.push(row)
+    })
+    db.each('SELECT * FROM runs', function (err, row) {
+      if (err) {
+        console.log(err)
+      }
+      dbData.tests.runs(row)
+    })
+    db.each('SELECT * FROM motor_channels', function (err, row) {
+      if (err) {
+        console.log(err)
+      }
+      dbData.motorChannels.push(row)
+    })
+    db.each('SELECT * FROM limit_channels', function (err, row) {
+      if (err) {
+        console.log(err)
+      }
+      dbData.limitChannels.push(row)
+    })
+    db.each('SELECT * FROM force_channels', function (err, row) {
+      if (err) {
+        console.log(err)
+      }
+      dbData.forceChannels.push(row)
+    })
+    db.each('SELECT * FROM displacement_channels', function (err, row) {
+      if (err) {
+        console.log(err)
+      }
+      dbData.displacementChannels.push(row)
+    })
+    db.each('SELECT * FROM direction_channels', function (err, row) {
+      if (err) {
+        console.log(err)
+      }
+      dbData.directionChannels.push(row)
+    })
+  })
+  console.log('Initializing Data Completed...')
+  db.close()
+}
+
 function createWindow () {
   /**
    * Initial window options
    */
 
+  initializeSettings()
   mainWindow = new BrowserWindow(mainWindowOptions)
 
   mainWindow.loadURL(winURL)
-
+  console.log('Main Windows Loaded...')
   openPort()
 
   mainWindow.on('closed', () => {

@@ -41,6 +41,7 @@
 
 <script>
 import { ipcRenderer } from 'electron'
+import { mapActions } from 'vuex'
 
 export default {
   name: 'App',
@@ -52,6 +53,9 @@ export default {
     }
   },
   methods: {
+    ...mapActions([
+      'initializeDbData'
+    ]),
     exitApplication () {
       ipcRenderer.send('exit-from-ui')
     },
@@ -66,6 +70,10 @@ export default {
   },
   created () {
     this.updateInterval()
+    ipcRenderer.send('request-db-data')
+    ipcRenderer.on('response-db-data', (events, args) => {
+      this.initializeDbData(args)
+    })
     ipcRenderer.on('response-data', (event, arg) => {
       this.data = arg.data.slice(0)
       this.isConnected = arg.isConnected
@@ -119,5 +127,4 @@ main, html, body {
 .non-draggable{
   -webkit-app-region: no-drag;
 }
-
 </style>
