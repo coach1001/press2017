@@ -38,19 +38,21 @@
 
       <v-layout class="test-select-form">
         <v-flex>
-          <v-card>
+          <v-card style="padding-bottom:10px;">
             <v-card-title style="padding-bottom:0px;">
-              <h4 class="headline mb-0">{{selectedTest.name}}</h4>
+              <h6 class="headline mb-0">{{selectedTest.name}}</h6>
             </v-card-title>
             <v-form v-model="valid" ref="form" class="test-select-form-card" lazy-validation>
               <v-text-field
                 label="Sample Number"
                 v-model="sampleNumber"
+                prepend-icon="assignment"
                 :disabled="!selectedTest.name"
                 :rules="sampleNumberRules"
                 required
               ></v-text-field>
 
+              <div style="display:flex;flex-direction:row;">
                 <v-dialog
                   persistent
                   v-model="modal"
@@ -77,10 +79,83 @@
                     </template>
                   </v-date-picker>
                 </v-dialog>
+                <div class="ml-3"/>
+                <v-dialog
+                  persistent
+                  v-model="modal2"
+                  lazy
+                  full-width
+                >
+                  <v-text-field
+                    slot="activator"
+                    label="Time of Test"
+                    v-model="testTime"
+                    prepend-icon="access_time"
+                    readonly
+                    :rules="testTimeRules"
+                    :disabled="!selectedTest.name"
+                  ></v-text-field>
+                  <v-time-picker v-model="testTime" actions dark>
+                    <template scope="{ save, cancel }">
+                      <v-card-actions>
+                        <v-btn flat @click="cancel">Cancel</v-btn>
+                        <v-btn primary @click="save">Save</v-btn>
+                      </v-card-actions>
+                    </template>
+                  </v-time-picker>
+                </v-dialog>
+              </div>
 
             </v-form>
           </v-card>
         </v-flex>
+
+        <v-flex style="margin-top:8px;" v-if="selectedTest.name === 'Dynamic Creep'">
+          <v-card style="padding-bottom:10px;">
+            <v-card-title style="padding-bottom:0px;">
+              <h4 class="headline mb-0">Settings</h4>
+            </v-card-title>
+            <v-form v-model="valid2" ref="form1" class="test-select-form-card" lazy-validation>
+              <div style="display:flex;flex-direction:row;">
+                <v-text-field
+                    type="number"
+                    label="Blow Rate (Hz)"
+                    step=0.5
+                    min=0.5
+                    max=5
+                    v-model="selectedTest.rate_value"
+                  ></v-text-field>
+                <div class="ml-2"/>
+                <v-text-field
+                    type="number"
+                    label="Condition Blows"
+                    step=1
+                    min=20
+                    v-model="selectedTest.conditioning_blows"
+                  ></v-text-field>
+                <div class="ml-2"/>
+                <v-text-field
+                    type="number"
+                    label="Blow Force (kN)"
+                    id="test"
+                    step=0.1
+                    min=1
+
+                    v-model="selectedTest.blow_force"
+                ></v-text-field>
+              </div>
+            </v-form>
+          </v-card>
+        </v-flex>
+
+        <v-flex style="margin-top:8px;" v-if="selectedTest.name">
+          <v-card style="padding-bottom:10px;">
+            <v-card-title style="padding-bottom:0px;">
+              <h4 class="headline mb-0">Limits</h4>
+            </v-card-title>
+          </v-card>
+        </v-flex>
+
       </v-layout>
     </div>
 
@@ -135,11 +210,16 @@ export default {
       selectedTest: {},
       sampleNumber: '',
       testDate: null,
+      testTime: null,
       modal: false,
+      modal2: false,
       sampleNumberRules: [
         (v) => !!v || 'Sample Number is Required'
       ],
       testDateRules: [
+        (v) => !!v || 'Test Date is Required'
+      ],
+      testTimeRules: [
         (v) => !!v || 'Test Date is Required'
       ],
       headers: [
@@ -166,6 +246,7 @@ export default {
       }
     },
     clear () {
+      this.selectedTest = {}
       this.$refs.form.reset()
     },
     scrollTableUp () {
@@ -221,9 +302,12 @@ export default {
 }
 .test-select-form {
   flex: 11;
-  margin-right: 35px;
-  margin-left: 5px;
+  display: flex;
+  flex-direction: column;
+  margin-right: 20px;
+  margin-left: 0px;
   margin-top: 20px;
+  height: 100%;
 }
 .test-select-form-card {
   margin-left: 20px;
