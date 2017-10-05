@@ -10,7 +10,14 @@ const ByteLength = SerialPort.parsers.ByteLength
 let port = new SerialPort('COM13', { autoOpen: false })
 let parser = port.pipe(new ByteLength({ length: 26 }))
 let mainWindow
-let db = new sqlite3.Database(path.join(__static, '/press_new.db'))
+let db
+
+if (process.env.NODE_ENV !== 'development') {
+  db = new sqlite3.Database('press_new.db')
+} else {
+  db = new sqlite3.Database(path.join(__static, 'press_new.db'))
+}
+
 let dbData = {
   tests: [],
   testLimits: [],
@@ -56,7 +63,7 @@ parser.on('data', function (data) {
 function openPort () {
   port.open(function (err) {
     if (err) {
-      if (connectionRetries === 30) {
+      if (connectionRetries === 10) {
         connectionFailed = true
         mainWindow.webContents.send('connection-failed')
       } else {

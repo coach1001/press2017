@@ -29,46 +29,59 @@
             class="elevation-1 fixed_headers"
           >
           <template slot="items" scope="props">
-            <td>{{ props.item.name }}</td>
-            <td class="text-xs-right">{{ props.item.rate_type }}</td>
-            <td class="text-xs-right">{{ props.item.rate_value }}</td>
+            <td @click.stop="rowClicked(props.item)" >{{ props.item.name }}</td>
+            <td @click.stop="rowClicked(props.item)" class="text-xs-right">{{ props.item.rate_type }}</td>
+            <td @click.stop="rowClicked(props.item)" class="text-xs-right">{{ props.item.rate_value }}</td>
           </template>
         </v-data-table>
       </div>
 
-      <div class="test-select-form">
-        <v-form v-model="valid" ref="form">
-          <v-text-field
-            label="Name"
-            v-model="name"
-            :rules="nameRules"
-            :counter="10"
-            required
-          ></v-text-field>
-          <v-text-field
-            label="E-mail"
-            v-model="email"
-            :rules="emailRules"
-            required
-          ></v-text-field>
-          <v-select
-            label="Item"
-            v-model="select"
-            :items="items"
-            :rules="[(v) => !!v || 'Item is required']"
-            required
-          ></v-select>
-          <v-checkbox
-            label="Do you agree?"
-            v-model="checkbox"
-            :rules="[(v) => !!v || 'You must agree to continue!']"
-            required
-          ></v-checkbox>
+      <v-layout class="test-select-form">
+        <v-flex>
+          <v-card>
+            <v-card-title style="padding-bottom:0px;">
+              <h4 class="headline mb-0">{{selectedTest.name}}</h4>
+            </v-card-title>
+            <v-form v-model="valid" ref="form" class="test-select-form-card" lazy-validation>
+              <v-text-field
+                label="Sample Number"
+                v-model="sampleNumber"
+                :disabled="!selectedTest.name"
+                :rules="sampleNumberRules"
+                required
+              ></v-text-field>
 
-          <v-btn @click="submit" :class="{ green: valid, red: !valid }">submit</v-btn>
-          <v-btn @click="clear">clear</v-btn>
-        </v-form>
-      </div>
+                <v-dialog
+                  persistent
+                  v-model="modal"
+                  lazy
+                  full-width
+                >
+                  <v-text-field
+                    slot="activator"
+                    label="Date of Test"
+                    v-model="testDate"
+                    prepend-icon="event"
+                    readonly
+                    :rules="testDateRules"
+                    required
+                    :disabled="!selectedTest.name"
+                  ></v-text-field>
+                  <v-date-picker v-model="testDate" scrollable actions dark>
+                    <template scope="{ save, cancel }">
+                      <v-card-actions>
+                        <v-spacer></v-spacer>
+                        <v-btn flat @click="cancel">Cancel</v-btn>
+                        <v-btn primary @click="save">OK</v-btn>
+                      </v-card-actions>
+                    </template>
+                  </v-date-picker>
+                </v-dialog>
+
+            </v-form>
+          </v-card>
+        </v-flex>
+      </v-layout>
     </div>
 
     <div class="test-select-buttons">
@@ -85,14 +98,14 @@
         <span class="toolbar-text">Drop Piston</span>
       </div>
       <div>
-        <v-btn fab large class="primary">
+        <v-btn fab large class="primary" @click.stop="clear">
           <v-icon large>sync</v-icon>
         </v-btn>
         <span class="toolbar-text">Reset Form</span>
       </div>
 
       <div>
-        <v-btn fab large class="primary">
+        <v-btn :disabled="!valid" fab large class="primary" @click.stop="submit">
           <v-icon large>play_arrow</v-icon>
         </v-btn>
         <span class="toolbar-text">Run Test</span>
@@ -119,23 +132,16 @@ export default {
       dialog: false,
       valid: false,
       name: '',
-      nameRules: [
-        (v) => !!v || 'Name is required',
-        (v) => (v && v.length <= 10) || 'Name must be less than 10 characters'
+      selectedTest: {},
+      sampleNumber: '',
+      testDate: null,
+      modal: false,
+      sampleNumberRules: [
+        (v) => !!v || 'Sample Number is Required'
       ],
-      email: '',
-      emailRules: [
-        (v) => !!v || 'E-mail is required',
-        (v) => /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(v) || 'E-mail must be valid'
+      testDateRules: [
+        (v) => !!v || 'Test Date is Required'
       ],
-      select: null,
-      items: [
-        'Item 1',
-        'Item 2',
-        'Item 3',
-        'Item 4'
-      ],
-      checkbox: false,
       headers: [
         {
           text: 'Test',
@@ -148,13 +154,15 @@ export default {
       ]
     }
   },
-  computed: mapState({
-    tests: state => state.DbData.data.tests
-  }),
+  computed: {
+    ...mapState({
+      tests: state => state.DbData.data.tests
+    })
+  },
   methods: {
     submit () {
       if (this.$refs.form.validate()) {
-        this.$refs.form.$el.submit()
+        // this.$refs.form.$el.submit()
       }
     },
     clear () {
@@ -173,10 +181,12 @@ export default {
     drop () {
       this.dialogMessage = 'Piston Dropping'
       this.dialog = true
+    },
+    rowClicked (row) {
+      this.selectedTest = row
     }
   },
   created () {
-    console.log(this.tests)
   }
 }
 </script>
@@ -213,6 +223,11 @@ export default {
   flex: 11;
   margin-right: 35px;
   margin-left: 5px;
+  margin-top: 20px;
+}
+.test-select-form-card {
+  margin-left: 20px;
+  margin-right: 20px;
 }
 .test-select-table-scroll {
   flex: 1;
