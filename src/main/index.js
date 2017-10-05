@@ -27,6 +27,9 @@ let dbData = {
 let buffer = Buffer.alloc(13)
 let inputs = [0, 0, 0, 0, 0, 0, 0, 0]
 let isConnected = false
+let connectionFailed = false
+let connectionRetries = 0
+
 buffer[0] = 0x63
 
 port.on('open', function () {
@@ -53,8 +56,15 @@ parser.on('data', function (data) {
 function openPort () {
   port.open(function (err) {
     if (err) {
-      console.log(err)
-      openPort()
+      if (connectionRetries === 30) {
+        connectionFailed = true
+        mainWindow.webContents.send('connection-failed')
+      } else {
+        connectionRetries += 1
+        setTimeout(() => {
+          openPort()
+        }, 500)
+      }
     }
   })
 }
@@ -89,6 +99,17 @@ ipcMain.on('minimize-from-ui', () => {
 
 ipcMain.on('request-db-data', (event, args) => {
   event.sender.send('response-db-data', dbData)
+})
+
+ipcMain.on('get-connection-status', (event) => {
+  event.sender.send('connection-status', connectionFailed)
+})
+
+ipcMain.on('retry-serial-connection', (event, args) => {
+  connectionFailed = false
+  mainWindow.webContents.send('connection-status', connectionFailed)
+  connectionRetries = 0
+  openPort()
 })
 
 const winURL = process.env.NODE_ENV === 'development'

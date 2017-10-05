@@ -2,15 +2,23 @@
   <v-app dark>
     <main class="main">
       <v-toolbar dark class="primary draggable">
-        <div v-if="isConnected">
+
+        <div v-if="isConnected && !connectionFailed" >
           <v-btn disabled icon class="non-draggable" >
-            <v-icon large>bluetooth</v-icon>
+            <v-icon large>bluetooth_connected</v-icon>
           </v-btn>
           <span class="toolbar-text">Connected</span>
         </div>
 
-        <v-progress-circular v-if="!isConnected" indeterminate v-bind:size="50"></v-progress-circular>
-        <span v-if="!isConnected" class="toolbar-text">Connecting...</span>
+        <v-progress-circular v-if="!isConnected && !connectionFailed" indeterminate v-bind:size="50"></v-progress-circular>
+        <span v-if="!isConnected && !connectionFailed" class="toolbar-text">Connecting...</span>
+
+        <div v-if="connectionFailed" >
+          <v-btn icon class="non-draggable" @click.stop="reconnect">
+            <v-icon large>bluetooth_searching</v-icon>
+          </v-btn>
+          <span class="toolbar-text">Connection Failed, Reconnect</span>
+        </div>
 
         <v-spacer/>
         <v-btn icon @click.stop="minimize" class="non-draggable">
@@ -49,7 +57,8 @@ export default {
     return {
       dialog: false,
       data: [0, 0, 0, 0, 0, 0, 0, 0],
-      isConnected: false
+      isConnected: false,
+      connectionFailed: false
     }
   },
   methods: {
@@ -66,17 +75,28 @@ export default {
     },
     minimize () {
       ipcRenderer.send('minimize-from-ui')
+    },
+    reconnect () {
+      ipcRenderer.send('retry-serial-connection')
     }
   },
   created () {
     this.updateInterval()
     ipcRenderer.send('request-db-data')
+    ipcRenderer.send('get-connection-status')
+
     ipcRenderer.on('response-db-data', (events, args) => {
       this.initializeDbData(args)
     })
     ipcRenderer.on('response-data', (event, arg) => {
       this.data = arg.data.slice(0)
       this.isConnected = arg.isConnected
+    })
+    ipcRenderer.on('connection-failed', (events, args) => {
+      this.connectionFailed = true
+    })
+    ipcRenderer.on('connection-status', (events, args) => {
+      this.connectionFailed = args
     })
   },
   beforeDestroy () {

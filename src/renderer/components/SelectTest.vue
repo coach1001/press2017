@@ -193,7 +193,7 @@ export default {
   display: flex;
   flex-direction: row;
   justify-content: space-around;
-  margin-bottom: 10px;
+  margin-bottom: 5px;
 }
 .test-select-body {
   flex: 1;
