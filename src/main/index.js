@@ -7,7 +7,7 @@ import path from 'path'
 
 const ByteLength = SerialPort.parsers.ByteLength
 
-let port = new SerialPort('COM13', { autoOpen: false })
+let port = new SerialPort('COM7', { autoOpen: false })
 let parser = port.pipe(new ByteLength({ length: 26 }))
 let mainWindow
 let db

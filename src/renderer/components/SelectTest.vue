@@ -92,6 +92,7 @@
                     v-model="testTime"
                     prepend-icon="access_time"
                     readonly
+                    required
                     :rules="testTimeRules"
                     :disabled="!selectedTest.name"
                   ></v-text-field>
@@ -206,6 +207,7 @@ export default {
       dialogMessage: '',
       dialog: false,
       valid: false,
+      valid2: false,
       name: '',
       selectedTest: {},
       sampleNumber: '',

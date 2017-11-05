@@ -4,7 +4,7 @@
       <v-toolbar dark class="primary draggable">
 
         <div v-if="isConnected && !connectionFailed" >
-          <v-btn disabled icon class="non-draggable" >
+          <v-btn icon flat style="cursor: default;" class="non-draggable" >
             <v-icon large>bluetooth_connected</v-icon>
           </v-btn>
           <span class="toolbar-text">Connected</span>

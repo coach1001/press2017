@@ -1,3 +1,4 @@
-{ 
- "eslint.autoFixOnSave": true
+{
+ "eslint.autoFixOnSave": true,
+ "eslint.options": { "configFile": "C:/Projects/press2017/.eslintrc.json" }
 }
