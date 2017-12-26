@@ -22,28 +22,33 @@
       </div>
 
       <div class="test-select-table" ref="scrollTable">
-          <v-data-table
-            v-bind:headers="headers"
-            :items="tests"
-            hide-actions
-            class="elevation-1 fixed_headers"
-          >
-          <template slot="items" scope="props">
-            <td @click.stop="rowClicked(props.item)" >{{ props.item.name }}</td>
-            <td @click.stop="rowClicked(props.item)" class="text-xs-right">{{ props.item.rate_type }}</td>
-            <td @click.stop="rowClicked(props.item)" class="text-xs-right">{{ props.item.rate_value }}</td>
+        <v-list two-line>
+          <template v-for="(item, index) in tests">
+            <v-list-tile
+              ripple
+              @click="rowClicked(item)"
+              :key="item.name"
+            >
+              <v-list-tile-content>
+                <v-list-tile-title>{{ item.name }}</v-list-tile-title>
+                <v-list-tile-sub-title>{{ item.rate_value }} {{ item.rate_type }}</v-list-tile-sub-title>
+              </v-list-tile-content>
+            </v-list-tile>
+            <v-divider v-if="index + 1 < tests.length" :key="item.name"></v-divider>
           </template>
-        </v-data-table>
+        </v-list>
       </div>
 
       <v-layout class="test-select-form">
         <v-flex>
           <v-card style="padding-bottom:10px;">
-            <v-card-title style="padding-bottom:0px;">
-              <h6 class="headline mb-0">{{selectedTest.name}}</h6>
-            </v-card-title>
             <v-form v-model="valid" ref="form" class="test-select-form-card" lazy-validation>
+
+              <v-card-title style="padding:0px;">
+                <h6 class="subheading mb-0" style="margin-top:15px;">{{selectedTest.name}}</h6>
+              </v-card-title>
               <v-text-field
+                style=""
                 label="Sample Number"
                 v-model="sampleNumber"
                 prepend-icon="assignment"
@@ -51,7 +56,6 @@
                 :rules="sampleNumberRules"
                 required
               ></v-text-field>
-
               <div style="display:flex;flex-direction:row;">
                 <v-dialog
                   persistent
@@ -107,17 +111,10 @@
                 </v-dialog>
               </div>
 
-            </v-form>
-          </v-card>
-        </v-flex>
-
-        <v-flex style="margin-top:8px;" v-if="selectedTest.name === 'Dynamic Creep'">
-          <v-card style="padding-bottom:10px;">
-            <v-card-title style="padding-bottom:0px;">
-              <h4 class="headline mb-0">Settings</h4>
-            </v-card-title>
-            <v-form v-model="valid2" ref="form1" class="test-select-form-card" lazy-validation>
-              <div style="display:flex;flex-direction:row;">
+              <v-card-title style="padding:0px;" v-if="selectedTest.name">
+                <h6 class="subheading mb-3 mt-1">Settings</h6>
+              </v-card-title>
+              <div style="display:flex;flex-direction:row;" v-if="selectedTest.name === 'Dynamic Creep'">
                 <v-text-field
                     type="number"
                     label="Blow Rate (Hz)"
@@ -141,22 +138,28 @@
                     id="test"
                     step=0.1
                     min=1
-
                     v-model="selectedTest.blow_force"
                 ></v-text-field>
+              </div>
+
+              <v-card-title style="padding:0px;" v-if="selectedTest.name">
+                <h6 class="subheading mb-3 mt-1">Limits</h6>
+              </v-card-title>
+              <div style="display:flex;flex-direction:row;">
+                <div class="mr-2" v-for="testLimit in testLimits" :key="`limit_${testLimit.id}`">
+                  <v-text-field
+                      type="number"
+                      :label="testLimit.limit_type"
+                      step=1
+                      min=0.1
+                      :enabled="testLimit.editable"
+                      v-model="testLimit.limit_value"
+                  ></v-text-field>
+                </div>
               </div>
             </v-form>
           </v-card>
         </v-flex>
-
-        <v-flex style="margin-top:8px;" v-if="selectedTest.name">
-          <v-card style="padding-bottom:10px;">
-            <v-card-title style="padding-bottom:0px;">
-              <h4 class="headline mb-0">Limits</h4>
-            </v-card-title>
-          </v-card>
-        </v-flex>
-
       </v-layout>
     </div>
 
@@ -188,10 +191,14 @@
       </div>
     </div>
 
-    <v-dialog v-model="dialog">
-      <v-card style="text-align: center;">
-        <v-progress-circular  indeterminate :size="150" :width="2" class="primary--text">{{dialogMessage}}</v-progress-circular>
-      </v-card>
+    <v-dialog v-model="dialog" fullscreen>
+      <div @click.stop="stop" class="dialog-full">
+        <v-progress-circular
+          indeterminate :size="200"
+          :width="2" class="primary--text progress-center">
+          {{dialogMessage}}
+        </v-progress-circular>
+      </div>
     </v-dialog>
 
   </div>
@@ -210,6 +217,7 @@ export default {
       valid2: false,
       name: '',
       selectedTest: {},
+      testLimits: [],
       sampleNumber: '',
       testDate: null,
       testTime: null,
@@ -238,7 +246,8 @@ export default {
   },
   computed: {
     ...mapState({
-      tests: state => state.DbData.data.tests
+      tests: state => state.DbData.data.tests,
+      limits: state => state.DbData.data.testLimits
     })
   },
   methods: {
@@ -265,8 +274,18 @@ export default {
       this.dialogMessage = 'Piston Dropping'
       this.dialog = true
     },
+    stop () {
+      this.dialog = false
+    },
     rowClicked (row) {
       this.selectedTest = row
+      this.testLimits = []
+      this.limits.map((limit) => {
+        if (row.id === limit.test) {
+          this.testLimits.push(limit)
+        }
+      })
+      console.log(this.testLimits)
     }
   },
   created () {
@@ -322,4 +341,15 @@ export default {
   display: flex;
   flex-direction: column;
 }
+.dialog-full {
+  height:100%;
+  width:100%;
+  background-color: rgba(48, 48, 48, 0.8)
+}
+.progress-center {
+  position: absolute
+  ;top:calc(50% - 100px);
+  left:calc(50% - 100px);
+}
+
 </style>

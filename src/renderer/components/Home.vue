@@ -15,7 +15,7 @@
         </div>
 
         <div>
-          <v-btn fab large class="primary" to="/viewresults">
+          <v-btn fab large class="primary" to="/settings">
             <v-icon large>build</v-icon>
           </v-btn>
           <span class="menu-text">Settings</span>

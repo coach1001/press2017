@@ -4,7 +4,7 @@
       <v-toolbar dark class="primary draggable">
 
         <div v-if="isConnected && !connectionFailed" >
-          <v-btn icon flat style="cursor: default;" class="non-draggable" >
+          <v-btn icon large flat style="cursor: default;" class="non-draggable" >
             <v-icon large>bluetooth_connected</v-icon>
           </v-btn>
           <span class="toolbar-text">Connected</span>
@@ -14,7 +14,7 @@
         <span v-if="!isConnected && !connectionFailed" class="toolbar-text">Connecting...</span>
 
         <div v-if="connectionFailed" >
-          <v-btn icon class="non-draggable" @click.stop="reconnect">
+          <v-btn flat icon large class="non-draggable" @click.stop="reconnect">
             <v-icon large>bluetooth_searching</v-icon>
           </v-btn>
           <span class="toolbar-text">Connection Failed, Reconnect</span>
@@ -29,7 +29,7 @@
         </v-btn>
       </v-toolbar>
       <content class="content">
-        <router-view @exit="dialog = true"></router-view>
+        <router-view v-if="dataInitialized" @exit="dialog = true"></router-view>
       </content>
     </main>
     <v-dialog v-model="dialog">
@@ -58,7 +58,9 @@ export default {
       dialog: false,
       data: [0, 0, 0, 0, 0, 0, 0, 0],
       isConnected: false,
-      connectionFailed: false
+      connectionFailed: false,
+      checkConnectionTimer: null,
+      dataInitialized: false
     }
   },
   methods: {
@@ -68,10 +70,10 @@ export default {
     exitApplication () {
       ipcRenderer.send('exit-from-ui')
     },
-    updateInterval () {
-      return setInterval(() => {
+    enableCheckConnectionTimer () {
+      this.checkConnectionTimer = setInterval(() => {
         ipcRenderer.send('request-data')
-      }, 1000 / 60)
+      }, 1000 / 2)
     },
     minimize () {
       ipcRenderer.send('minimize-from-ui')
@@ -81,16 +83,19 @@ export default {
     }
   },
   created () {
-    this.updateInterval()
+    this.enableCheckConnectionTimer()
     ipcRenderer.send('request-db-data')
     ipcRenderer.send('get-connection-status')
-
     ipcRenderer.on('response-db-data', (events, args) => {
       this.initializeDbData(args)
+      this.dataInitialized = true
     })
     ipcRenderer.on('response-data', (event, arg) => {
       this.data = arg.data.slice(0)
       this.isConnected = arg.isConnected
+      if (this.isConnected) {
+        clearInterval(this.checkConnectionTimer)
+      }
     })
     ipcRenderer.on('connection-failed', (events, args) => {
       this.connectionFailed = true
@@ -100,8 +105,9 @@ export default {
     })
   },
   beforeDestroy () {
-    clearInterval(this.updateInterval)
-    ipcRenderer.send('disconnect-serial')
+    if (this.checkConnectionTimer) {
+      clearInterval(this.checkConnectionTimer)
+    }
   }
 }
 </script>
@@ -111,7 +117,9 @@ export default {
 </style>
 
 <style>
-@import url('https://fonts.googleapis.com/css?family=Roboto:300,400,500,700|Material+Icons');
+/* @import url('https://fonts.googleapis.com/css?family=Roboto:300,400,500,700|Material+Icons'); */
+@import url('./assets/css/icons_fonts.css');
+
 ::-webkit-scrollbar {
   display: none;
 }

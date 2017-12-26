@@ -20,6 +20,6 @@ new Vue({
   store,
   template: '<App/>',
   created () {
-    // router.push('/settings')
+    router.push('/settings')
   }
 }).$mount('#app')

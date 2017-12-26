@@ -4,19 +4,11 @@ import { app, BrowserWindow, ipcMain } from 'electron'
 import SerialPort from 'serialport'
 import sqlite3 from 'sqlite3'
 import path from 'path'
+import { setTimeout } from 'timers'
 
-const ByteLength = SerialPort.parsers.ByteLength
-
-let port = new SerialPort('COM7', { autoOpen: false })
-let parser = port.pipe(new ByteLength({ length: 26 }))
-let mainWindow
-let db
-
-if (process.env.NODE_ENV !== 'development') {
-  db = new sqlite3.Database('press_new.db')
-} else {
-  db = new sqlite3.Database(path.join(__static, 'press_new.db'))
-}
+let port
+let ByteLength = SerialPort.parsers.ByteLength
+let parser
 
 let dbData = {
   tests: [],
@@ -28,37 +20,24 @@ let dbData = {
   limitChannels: [],
   forceChannels: [],
   displacementChannels: [],
-  directionChannels: []
+  directionChannels: [],
+  activeSettings: {}
 }
 
-let buffer = Buffer.alloc(13)
+let outputs = Buffer.alloc(13)
+outputs[0] = 0x63
 let inputs = [0, 0, 0, 0, 0, 0, 0, 0]
 let isConnected = false
 let connectionFailed = false
 let connectionRetries = 0
+let mainWindow
+let db
 
-buffer[0] = 0x63
-
-port.on('open', function () {
-  console.log('Port Opened...')
-  setTimeout(function () {
-    isConnected = true
-    port.write(buffer)
-  }, 1000)
-})
-
-parser.on('data', function (data) {
-  inputs = []
-  inputs.push(data.readUInt32BE(0))
-  inputs.push(data.readUInt32BE(4))
-  inputs.push(data.readUInt32BE(8))
-  inputs.push(data.readUInt32BE(12))
-  inputs.push(data.readUInt32BE(16))
-  inputs.push(data.readUInt32BE(20))
-  inputs.push(data.readUInt8(24))
-  inputs.push(data.readUInt8(25))
-  port.write(buffer)
-})
+if (process.env.NODE_ENV !== 'development') {
+  db = new sqlite3.Database('press_new.db')
+} else {
+  db = new sqlite3.Database(path.join(__static, 'press_new.db'))
+}
 
 function openPort () {
   port.open(function (err) {
@@ -90,7 +69,13 @@ ipcMain.on('disconnect-serial', () => {
 })
 
 ipcMain.on('exit-from-ui', () => {
-  app.quit()
+  port.close(() => {
+    mainWindow.close()
+  })
+})
+
+ipcMain.on('settings-output', (event, args) => {
+  outputs = args
 })
 
 ipcMain.on('request-data', (event, args) => {
@@ -125,21 +110,22 @@ const winURL = process.env.NODE_ENV === 'development'
 
 const mainWindowOptions = process.env.NODE_ENV === 'development'
   ? {
-    height: 700,
+    height: 900,
     useContentSize: true,
-    width: 900,
+    width: 1200,
     center: true
   }
   : {
     height: 800,
     useContentSize: true,
     width: 1300,
-    frame: false
+    frame: false,
+    center: true
   }
 
-function initializeSettings () {
+function initialize () {
   db.serialize(function () {
-    db.each('SELECT * FROM tests', function (err, row) {
+    db.each('SELECT * FROM tests WHERE active=1', function (err, row) {
       if (err) {
         console.log(err)
       }
@@ -151,17 +137,24 @@ function initializeSettings () {
       }
       dbData.testLimits.push(row)
     })
+    db.each('SELECT * FROM settings WHERE active=1 LIMIT 1', function (err, row) {
+      if (err) {
+        console.log(err)
+      }
+      dbData.activeSettings = row
+    })
     db.each('SELECT * FROM settings', function (err, row) {
       if (err) {
         console.log(err)
       }
       dbData.settings.push(row)
     })
+
     db.each('SELECT * FROM runs', function (err, row) {
       if (err) {
         console.log(err)
       }
-      dbData.tests.runs(row)
+      dbData.runs(row)
     })
     db.each('SELECT * FROM motor_channels', function (err, row) {
       if (err) {
@@ -194,34 +187,49 @@ function initializeSettings () {
       dbData.directionChannels.push(row)
     })
   })
-  console.log('Initializing Data Completed...')
-  db.close()
-}
-
-function createWindow () {
-  /**
-   * Initial window options
-   */
-
-  initializeSettings()
-  mainWindow = new BrowserWindow(mainWindowOptions)
-
-  mainWindow.loadURL(winURL)
-  console.log('Main Windows Loaded...')
-  openPort()
-
-  mainWindow.on('closed', () => {
-    mainWindow = null
+  db.close(() => {
+    port = new SerialPort(dbData.activeSettings.comm_port, { autoOpen: false })
+    port.on('open', () => {
+      port.read(null, 0, 1000)
+      port.flush(() => {
+        parser = port.pipe(new ByteLength({ length: 26 }))
+        parser.on('data', (data) => {
+          inputs[0] = data.readUInt32BE(0)
+          inputs[1] = data.readUInt32BE(4)
+          inputs[2] = data.readUInt32BE(8)
+          inputs[3] = data.readUInt32BE(12)
+          inputs[4] = data.readUInt32BE(16)
+          inputs[5] = data.readUInt32BE(20)
+          inputs[6] = data.readUInt8(24)
+          inputs[7] = data.readUInt8(25)
+          isConnected = true
+          port.write(outputs)
+        })
+        setTimeout(() => {
+          isConnected = true
+          port.write(outputs)
+        }, 2000)
+      })
+    })
+    mainWindow = new BrowserWindow(mainWindowOptions)
+    mainWindow.loadURL(winURL)
+    mainWindow.on('closed', () => {
+      port.close(() => {
+        mainWindow = null
+      })
+    })
+    openPort()
   })
 }
-
+function createWindow () {
+  initialize()
+}
 app.on('ready', createWindow)
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
   }
 })
-
 app.on('activate', () => {
   if (mainWindow === null) {
     createWindow()
